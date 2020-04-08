@@ -1,0 +1,195 @@
+---
+title: "Project 3"
+author: "Ismail Harti"
+date: "08/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+--
+## Import Data
+
+```{r}
+# races <- read.csv("races.csv")
+# runs <- read.csv("runs.csv")
+```
+
+--
+## Data Cleaning and Exploration
+
+```{r}
+# cleaning races
+# races$race_no < as.factor(races$race_no)
+# races$surface <- as.factor(races$surface)
+
+# cleaning runs
+# library(dplyr)
+# runs <- runs %>% select(won, everything()) # move response variable to front
+# runs$won <- as.factor(runs$won) # this is our response variable
+
+# runs$trainer_id <- as.factor(runs$trainer_id)
+# runs$jockey_id <- as.factor(runs$jockey_id)
+```
+
+```{r}
+# str(races)
+# str(runs)
+```
+
+```{r}
+# summary(races)
+# summary(runs)
+```
+
+```{r}
+# combine data frames
+# hk <- merge(runs, races, by.x = "race_id", by.y = "race_id")
+```
+
+```{r}
+# write.csv(hk,file="/Users/mlewis/Desktop/School/Winter 2020/TO 414/Project 3/hk.csv", row.names = FALSE)
+```
+
+```{r}
+hk <- read.csv("hk.csv")
+```
+
+```{r}
+hk$won <- as.factor(hk$won) # this is our response variable
+
+hk$position_sec5 <- NULL
+hk$position_sec6 <- NULL
+
+hk$behind_sec5 <- NULL
+hk$behind_sec6 <- NULL
+
+hk$time5.x <- NULL
+hk$time6.x <- NULL
+
+hk$sec_time5 <- NULL
+hk$sec_time6 <- NULL
+hk$sec_time7 <- NULL
+
+hk$time5.y <- NULL
+hk$time6.y <- NULL
+
+hk$time7 <- NULL
+
+hk$place_combination4 <- NULL
+
+hk$place_dividend4 <- NULL
+
+hk$win_combination2 <- NULL
+hk$win_dividend2 <- NULL
+```
+
+```{r}
+str(hk)
+summary(hk)
+```
+
+```{r}
+hv <- hk[hk$venue == "HV",]
+```
+
+```{r}
+str(hv)
+summary(hv)
+```
+
+--
+## Data Visualization
+
+```{r}
+
+```
+
+--
+## Logistic Regression Models
+
+### Logistic Regression
+```{r}
+logistic1 <- glm(won ~ horse_age + horse_country + horse_type + horse_rating + declared_weight + draw + place_odds + trainer_id + jockey_id, data = hk, family = "binomial")
+summary(logistic1)
+```
+
+
+## Predictive Models
+
+### Normalize Data
+
+```{r}
+# normalizing data for HK
+#randomize the data
+hv_mm <- as.data.frame(model.matrix(~ . -1, data = hv))
+hv_random <- hv[sample(nrow(hv)), ]
+
+#normalize the data
+
+normalize <- function(x) { 
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+hv_norm <- as.data.frame(lapply(hv_mm[1:57], normalize))
+
+
+
+#build test and train dataset
+hv_train <- hv_norm[1:22000, ]
+hv_test <- hv_norm[22001:27501, ]
+```
+
+### kNN
+
+```{r}
+hv_train_labels <- hv_norm[1:22000, 2]
+hv_test_labels <- hv_norm[22001:27501, 2]
+
+library(class)
+hv_test_pred <- knn(train = hv_train, test = hv_test,
+                      cl = hv_train_labels, k=21)
+library(gmodels)
+CrossTable(x = hv_test_labels, y = hv_test_pred, 
+           prop.chisq=FALSE)
+```
+
+### SVM
+
+
+```{r}
+library(kernlab)
+
+hv_classifier <- ksvm(won~ ., data = hv_train,
+                          kernel = "vanilladot")
+
+hv_predictions <- predict(hv_classifier, hv_test)
+
+head(hv_predictions)
+
+table(hv_predictions, hv_test$y)
+
+# look only at agreement vs. non-agreement
+# construct a vector of TRUE/FALSE indicating correct/incorrect predictions
+agreement <- hv_predictions == hv_test$y
+table(agreement)
+prop.table(table(agreement))
+
+## Step 4: Improving model performance
+hv_classifier_rbf <- ksvm(won~ ., data = hv_train, kernel = "rbfdot")
+hv_predictions_rbf <- predict(hv_classifier_rbf, hv_test)
+
+agreement_rbf <- hv_predictions_rbf == hv_test$y
+table(agreement_rbf)
+prop.table(table(agreement_rbf))```
+
+```{r}
+
+
+
+## Conclusion
+
+**Conclusion**
+
